@@ -1,0 +1,288 @@
+#+TITLE: Rime Ice 小鹤双拼精简版
+#+AUTHOR: Personal Configuration
+#+DATE: 2025-08-14
+
+* 说明
+
+本配置基于 [[https://github.com/iDvel/rime-ice][雾凇拼音 (rime-ice)]] 项目，​=仅保留个人需要的小鹤双拼配置=​，删除了其他不需要的输入方案和功能。
+
+** 适用场景
+- 只使用小鹤双拼输入的用户
+- 希望减少配置文件体积的用户
+- 需要精简版 Rime 配置的用户
+- 希望保持系统默认 Emacs 快捷键的用户（Squirrel 默认支持 Ctrl+A/E/F/B 等）
+
+* 修改记录
+
+** 2025-08-14 精简配置
+*** 保留的功能
+- [X] 小鹤双拼输入方案 (=double_pinyin_flypy.schema.yaml=)
+- [X] 完整的中文词库 (=rime_ice.dict.yaml= + =cn_dicts/=)
+- [X] 英文输入支持 (=melt_eng=)
+- [X] 中英混合输入 (=cn_en_flypy=)
+- [X] 部件拆字反查 (=radical_pinyin=)
+- [X] 全部 Lua 功能脚本
+  - 日期时间转换
+  - 计算器
+  - 错音错字纠正
+  - Unicode 输入
+  - 数字金额大写
+  - 农历转换
+- [X] 简繁转换和 Emoji 支持
+- [X] 符号快速输入
+
+*** 移除的功能
+- [-] 全拼方案 (=rime_ice.schema.yaml=)
+- [-] 九宫格方案 (=t9.schema.yaml=)
+- [-] 其他双拼方案
+  - 自然码双拼 (=double_pinyin.schema.yaml=)
+  - 智能 ABC 双拼 (=double_pinyin_abc.schema.yaml=)
+  - 微软双拼 (=double_pinyin_mspy.schema.yaml=)
+  - 搜狗双拼 (=double_pinyin_sogou.schema.yaml=)
+  - 紫光双拼 (=double_pinyin_ziguang.schema.yaml=)
+  - 拼音加加双拼 (=double_pinyin_jiajia.schema.yaml=)
+- [-] 其他双拼方案的中英混合词库文件
+- [-] 旧版自定义短语文件 (=custom_phrase.txt=)
+- [-] 平台默认配置文件 (=squirrel.yaml=, =weasel.yaml=) :: 使用系统自带配置
+- [-] 完整的 =default.yaml= :: 改用精简的 =default.custom.yaml= 补丁，保持 Squirrel 默认的 Emacs 快捷键
+- [-] T9 九宫格相关 Lua 脚本 (=lua/t9_preedit.lua=)
+- [-] 自定义符号文件 (=symbols_v.yaml=, =symbols_caps_v.yaml=) :: 改用系统默认的符号输入（'/' 前缀）
+- [-] GitHub 项目文件 (=.github/= 目录下的所有文件)
+- [-] Go 工作空间配置 (=go.work=)
+
+*** 配置文件修改
+- 新增 =default.custom.yaml= :: 替换完整的 default.yaml，只包含个人定制
+  - 方案列表只保留小鹤双拼
+  - 候选词数量设置为 7 个
+  - *重要*：保持 Squirrel 系统默认的 Emacs 快捷键（Ctrl+A 行首，Ctrl+E 行尾等）
+- 新增 =custom_phrase_double.txt= :: 小鹤双拼专用自定义短语文件
+- 应用双拼补丁 :: 从 =others/双拼补丁示例/= 复制以下文件到根目录
+  - =melt_eng.custom.yaml= :: 让英文输入支持小鹤双拼编码
+  - =radical_pinyin.custom.yaml= :: 让部件拆字支持小鹤双拼编码
+- 新增 =squirrel.custom.yaml= :: macOS 鼠须管个人定制配置
+  - 键盘布局设置为 Dvorak
+  - 添加明暗主题配色方案 (flat_light/flat_dark)
+  - Raycast 应用自动切换到英文模式（只追加配置，不覆盖系统默认）
+- 修改 =double_pinyin_flypy.schema.yaml= :: 简化符号输入配置
+  - 将复杂的 =__include= 配置替换为简洁的 =import_preset: symbols=
+  - 符号输入前缀从 'V' 改回默认的 '/'
+  - 移除对外部符号文件的依赖，使用 Rime 内置符号
+- 删除 =others/= 目录 :: 移除开发脚本、示例配置等无用文件
+
+* 使用说明
+
+** 部署步骤
+1. 将此配置目录复制到对应平台的 Rime 配置目录
+2. 重新部署 Rime
+3. 选择"小鹤双拼"输入方案
+
+** 平台支持
+| 系统    | 前端                   | 说明  |
+|---------+------------------------+-------|
+| macOS   | Squirrel (鼠须管)       |       |
+| Windows | Weasel (小狼毫)         |       |
+| Linux   | ibus-rime, fcitx5-rime |       |
+| Android | fcitx5-android, Trime  |       |
+| iOS     | Hamster (仓输入法)      | 需内购 |
+
+** 自定义短语
+编辑 =custom_phrase_double.txt= 文件添加个人常用短语：
+
+#+begin_src text
+# 格式：编码<Tab>候选词<Tab>权重（可选）
+gc	工程
+dk	打开
+#+end_src
+
+** 功能快捷键
+
+| 功能       | 触发方式          | 示例       |
+|------------+------------------+------------|
+| 部件拆字反查 | =uU= + 拼音        | =uUmu= → 木  |
+| 拆字辅码    | 拼音 + =`= + 辅码   | =mu`mu= → 木 |
+| 英文输入    | 直接输入          | =hello=      |
+| 符号输入    | =/= + 首字母缩写    | =/xh= → ☆   |
+| 日期时间    | 关键词            | =date=, =time= |
+| 计算器      | =cC= + 算式        | =c1+2*3= → 7 |
+| Unicode    | =U= + Unicode 码位 | =U4e2d= → 中 |
+| 数字大写    | =R= + 数字         | =R123.45=    |
+| 农历       | =N= + 八位数字      | =N20241201=  |
+
+* 重新制作配置的步骤
+
+当 rime-ice 项目更新后，可按以下步骤重新制作精简配置：
+
+** 准备工作
+1. 下载最新版 [[https://github.com/iDvel/rime-ice][rime-ice]] 配置
+2. 备份当前的 =custom_phrase_double.txt= 和个人设置
+
+** 删除文件清单
+*** 方案文件
+#+begin_src bash
+rm rime_ice.schema.yaml
+rm t9.schema.yaml
+rm double_pinyin.schema.yaml
+rm double_pinyin_abc.schema.yaml
+rm double_pinyin_mspy.schema.yaml
+rm double_pinyin_sogou.schema.yaml
+rm double_pinyin_ziguang.schema.yaml
+rm double_pinyin_jiajia.schema.yaml
+#+end_src
+
+*** 英文词库文件
+#+begin_src bash
+rm en_dicts/cn_en_abc.txt
+rm en_dicts/cn_en_double_pinyin.txt
+rm en_dicts/cn_en_jiajia.txt
+rm en_dicts/cn_en_mspy.txt
+rm en_dicts/cn_en_sogou.txt
+rm en_dicts/cn_en_ziguang.txt
+#+end_src
+
+*** 其他文件
+#+begin_src bash
+rm custom_phrase.txt
+rm go.work
+rm default.yaml  # ❗️重要：保持 Squirrel 默认的 Emacs 快捷键（Ctrl+A/E/F/B 等）
+rm squirrel.yaml weasel.yaml  # 删除平台配置，使用系统自带
+#+end_src
+
+** 修改配置文件
+*** 创建 default.custom.yaml
+#+begin_src bash
+cat > default.custom.yaml << 'EOF'
+patch:
+  menu/page_size: 7
+  schema_list:
+    - schema: double_pinyin_flypy
+EOF
+#+end_src
+
+*** 应用双拼补丁
+#+begin_src bash
+cp others/双拼补丁示例/melt_eng.custom.yaml ./
+cp others/双拼补丁示例/radical_pinyin.custom.yaml ./
+#+end_src
+
+*** 修改符号输入配置
+直接编辑 =double_pinyin_flypy.schema.yaml= 文件，简化符号配置：
+
+#+begin_src yaml
+# 将复杂的 punctuator 配置替换为简洁版本
+punctuator:
+  import_preset: symbols
+
+# 在 recognizer/patterns 中更新符号前缀
+recognizer:
+  patterns:
+    punct: "^/([0-9]0?|[A-Za-z]+)$"  # 使用 / 前缀而不是 V 前缀
+#+end_src
+
+*** 创建自定义短语文件
+#+begin_src bash
+touch custom_phrase_double.txt
+#+end_src
+
+*** 创建 macOS 定制配置
+#+begin_src bash
+cat > squirrel.custom.yaml << 'EOF'
+patch:
+  keyboard_layout: Dvorak
+
+  style:
+    color_scheme: flat_light
+    color_scheme_dark: flat_dark
+
+  # 只追加/修改某个 app 的设置，不覆盖系统默认 app_options：
+  "app_options/com.raycast.macos":
+    ascii_mode: true
+
+  preset_color_schemes:
+    flat_light:
+      name: "扁平明／Flat Light"
+      candidate_list_layout: linear
+      inline_preedit: true
+      translucency: true
+      mutual_exclusive: true
+      corner_radius: 12.0
+      hilited_corner_radius: 12.0
+      border_height: -1.0
+      border_width: -1.0
+      line_spacing: 4.0
+      spacing: 10.0
+      alpha: 80
+      shadow_size: 1.0
+      color_space: display_p3
+      back_color: 0x1AFFFFFF
+      candidate_text_color: 0xB3000000
+      comment_text_color: 0x80333333
+      label_color: 0xBB333333
+      hilited_candidate_back_color: 0x4DFFFFFF
+      hilited_candidate_text_color: 0x000000
+      hilited_comment_text_color: 0xBF333333
+      hilited_candidate_label_color: 0x000000
+      preedit_back_color: 0x1A000000
+      text_color: 0xBF323232
+      hilited_text_color: 0xBF1A1A1A
+    flat_dark:
+      name: "扁平暗／Flat Dark"
+      candidate_list_layout: linear
+      inline_preedit: true #单行显示
+      translucency: true
+      mutual_exclusive: true
+      corner_radius: 12.0
+      hilited_corner_radius: 12.0
+      border_height: -1.0
+      border_width: -1.0
+      line_spacing: 4.0
+      spacing: 10.0
+      alpha: 80
+      shadow_size: 1.0
+      color_space: display_p3
+      back_color: 0x1A000000           # 半透明黑色背景
+      candidate_text_color: 0xB3FFFFFF  # 候选词文字：白色
+      comment_text_color: 0x80CCCCCC    # 注释文字：浅灰色
+      label_color: 0xBBCCCCCC           # 序号标签：浅灰色
+      hilited_candidate_back_color: 0x4D000000  # 高亮候选词背景：深黑色
+      hilited_candidate_text_color: 0xFFFFFF    # 高亮候选词文字：纯白
+      hilited_comment_text_color: 0xBFCCCCCC    # 高亮注释：浅灰色
+      hilited_candidate_label_color: 0xFFFFFF   # 高亮序号：纯白
+      preedit_back_color: 0x1AFFFFFF   # 编码区背景：半透明白色
+      text_color: 0xBFCDCDCD           # 编码区文字：浅灰色
+      hilited_text_color: 0xBFE5E5E5   # 编码区高亮文字：更亮的灰色
+EOF
+#+end_src
+
+** 清理工作
+#+begin_src bash
+rm -rf others/
+#+end_src
+
+** 验证文件
+
+最终保留的文件结构应该是：
+- =double_pinyin_flypy.schema.yaml=
+- =default.custom.yaml= (替代完整的 default.yaml)
+- =custom_phrase_double.txt=
+- =melt_eng.custom.yaml=
+- =radical_pinyin.custom.yaml=
+- =squirrel.custom.yaml= (macOS 专用)
+- =rime_ice.dict.yaml=
+- =melt_eng.dict.yaml=, =melt_eng.schema.yaml=
+- =radical_pinyin.dict.yaml=, =radical_pinyin.schema.yaml=
+- Lua 脚本目录 (=lua/=)，但不包含 T9 相关脚本
+- (不包含 =default.yaml=, =squirrel.yaml=, =weasel.yaml=，使用系统自带配置)
+- =cn_dicts/= 目录
+- =en_dicts/= 目录 (只保留 =cn_en.txt=, =cn_en_flypy.txt=, =en.dict.yaml=, =en_ext.dict.yaml=)
+- =opencc/= 目录
+
+* 原始项目
+
+本配置基于 [[https://github.com/iDvel/rime-ice][iDvel/rime-ice]] 项目制作。
+
+原项目采用 GPL 3.0 协议开源，感谢原作者 Dvel 及所有贡献者的辛勤工作。
+
+** 相关链接
+- [[https://github.com/iDvel/rime-ice][雾凇拼音项目主页]]
+- [[https://dvel.me/posts/rime-ice/][雾凇拼音详细介绍]]
+- [[https://rime.im/][Rime 输入法引擎官网]]

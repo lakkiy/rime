@@ -1,0 +1,16 @@
+.DS_Store
+dist/
+build/
+sync/
+*.userdb/
+installation.yaml
+user.yaml
+
+custom_phrase_double.txt
+cn_dicts/temp.txt
+
+*private*
+
+rime_console
+rime_deployer
+rime_patch
