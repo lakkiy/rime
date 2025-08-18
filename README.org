@@ -1,10 +1,17 @@
+:PROPERTIES:
+:ID:       BA1D136E-CCB3-4854-ADE6-89FCAA9EC030
+:END:
 #+TITLE: Rime Ice 小鹤双拼精简版
 #+AUTHOR: Personal Configuration
 #+DATE: 2025-08-14
 
+[[./light.png]]
+
+[[./dark.png]]
+
 * 说明
 
-本配置基于 [[https://github.com/iDvel/rime-ice][雾凇拼音 (rime-ice)]] 项目，​=仅保留个人需要的小鹤双拼配置=​，删除了其他不需要的输入方案和功能。
+本配置基于 [[https://github.com/iDvel/rime-ice][雾凇拼音 (rime-ice)]] 项目，仅保留个人需要的小鹤双拼配置，删除了其他不需要的输入方案和功能。
 
 ** 适用场景
 - 只使用小鹤双拼输入的用户
@@ -43,31 +50,31 @@
   - 拼音加加双拼 (=double_pinyin_jiajia.schema.yaml=)
 - [-] 其他双拼方案的中英混合词库文件
 - [-] 旧版自定义短语文件 (=custom_phrase.txt=)
-- [-] 平台默认配置文件 (=squirrel.yaml=, =weasel.yaml=) :: 使用系统自带配置
-- [-] 完整的 =default.yaml= :: 改用精简的 =default.custom.yaml= 补丁，保持 Squirrel 默认的 Emacs 快捷键
+- [-] 平台默认配置文件 (=squirrel.yaml=, =weasel.yaml=) 使用系统自带配置
+- [-] 完整的 =default.yaml= 改用精简的 =default.custom.yaml= 补丁，保持 Squirrel 默认的 Emacs 快捷键
 - [-] T9 九宫格相关 Lua 脚本 (=lua/t9_preedit.lua=)
-- [-] 自定义符号文件 (=symbols_v.yaml=, =symbols_caps_v.yaml=) :: 改用系统默认的符号输入（'/' 前缀）
+- [-] 自定义符号文件 (=symbols_v.yaml=, =symbols_caps_v.yaml=) 改用系统默认的符号输入（'/' 前缀）
 - [-] GitHub 项目文件 (=.github/= 目录下的所有文件)
 - [-] Go 工作空间配置 (=go.work=)
 
 *** 配置文件修改
-- 新增 =default.custom.yaml= :: 替换完整的 default.yaml，只包含个人定制
+- 新增 =default.custom.yaml= 替换完整的 default.yaml，只包含个人定制
   - 方案列表只保留小鹤双拼
   - 候选词数量设置为 7 个
-  - *重要*：保持 Squirrel 系统默认的 Emacs 快捷键（Ctrl+A 行首，Ctrl+E 行尾等）
-- 新增 =custom_phrase_double.txt= :: 小鹤双拼专用自定义短语文件
-- 应用双拼补丁 :: 从 =others/双拼补丁示例/= 复制以下文件到根目录
+  - 重要：保持 Squirrel 系统默认的 Emacs 快捷键（Ctrl+A 行首，Ctrl+E 行尾等）
+- 新增 =custom_phrase_double.txt= 小鹤双拼专用自定义短语文件
+- 应用双拼补丁 从 =others/双拼补丁示例/= 复制以下文件到根目录
   - =melt_eng.custom.yaml= :: 让英文输入支持小鹤双拼编码
   - =radical_pinyin.custom.yaml= :: 让部件拆字支持小鹤双拼编码
-- 新增 =squirrel.custom.yaml= :: macOS 鼠须管个人定制配置
+- 新增 =squirrel.custom.yaml= macOS 鼠须管个人定制配置
   - 键盘布局设置为 Dvorak
   - 添加明暗主题配色方案 (flat_light/flat_dark)
   - Raycast 应用自动切换到英文模式（只追加配置，不覆盖系统默认）
-- 修改 =double_pinyin_flypy.schema.yaml= :: 简化符号输入配置
+- 修改 =double_pinyin_flypy.schema.yaml= 简化符号输入配置
   - 将复杂的 =__include= 配置替换为简洁的 =import_preset: symbols=
   - 符号输入前缀从 'V' 改回默认的 '/'
   - 移除对外部符号文件的依赖，使用 Rime 内置符号
-- 删除 =others/= 目录 :: 移除开发脚本、示例配置等无用文件
+- 删除 =others/= 目录 移除开发脚本、示例配置等无用文件
 
 * 使用说明
 
