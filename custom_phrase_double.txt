@@ -1,0 +1,20 @@
+# Rime table
+# coding: utf-8
+#@/db_name	custom_phrase_double.txt
+#@/db_type	tabledb
+#
+# 自定义短语（小鹤双拼）
+#
+# 由 double_pinyin_flypy.schema.yaml 的 custom_phrase/user_dict 挂载。
+# initial_quality: 99，权重高于拼音和英文，所以这里写的词会被顶到候选最前面。
+#
+# ★ 格式是【候选词】<Tab>【编码】<Tab>【权重】—— 词在前，编码在后，别写反了。
+#   权重可省略，同编码下数字越大越靠前。写反了不会报错，词条直接静默失效。
+#   编码可以随便起，不限于双拼，比如用拼音首字母缩写。
+#
+# 示例（下面几行去掉 # 即可生效）：
+# 工程	gc
+# 打开	dk
+# name@example.com	yx
+# 中华人民共和国	zhrmghg	2
+# 中国	zhrmghg	1

@@ -1,0 +1,18 @@
+# ==============================================================================
+# 英文方案（melt_eng）补丁 —— 把拼写派生规则改成小鹤双拼
+# ==============================================================================
+# melt_eng.schema.yaml 第 51 行的默认值是 __include: algebra_rime_ice（全拼）。
+# 英文输入是作为次翻译器挂在拼音方案里的，它的 speller/algebra 决定了「打什么字母
+# 能出什么英文候选」，必须和主方案用同一套拼写运算，否则英文候选出不来或者错乱。
+#
+# 上游把各双拼变体的规则都写在 melt_eng.schema.yaml 里了（algebra_double_pinyin_flypy
+# 等节点），这里只是选一个。内容抄自 rime-ice/others/patch_examples/melt_eng.custom.yaml。
+#
+# 换双拼方案时改这一行即可，可选值见 melt_eng.schema.yaml 里的 algebra_* 节点：
+#   algebra_rime_ice / algebra_pinyin / algebra_double_pinyin /
+#   algebra_double_pinyin_flypy / _mspy / _sogou / _abc / _ziguang / _jiajia
+# ==============================================================================
+
+patch:
+  speller/algebra:
+    __include: melt_eng.schema.yaml:/algebra_double_pinyin_flypy  # 小鹤双拼

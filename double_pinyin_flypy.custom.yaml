@@ -1,0 +1,76 @@
+# ==============================================================================
+# 小鹤双拼方案补丁
+# ==============================================================================
+# 用 .custom.yaml 而不是直接改 double_pinyin_flypy.schema.yaml，是为了让同步上游
+# 变成「直接覆盖 schema 文件」，补丁自动存活，不用再逐条重放定制。
+# ==============================================================================
+
+patch:
+  # ────────────────────────────────────────────────────────────────────────────
+  # grammar —— 万象语法模型
+  # ────────────────────────────────────────────────────────────────────────────
+  # 雾凇出厂【不带任何语法模型】，句子的排序全靠词频。挂上语法模型后，librime 会用
+  # n-gram 概率给整句候选打分，长句和搭配的准确率明显提升。
+  #
+  # 下面这组参数不是我调的，是照抄雾凇官方的配方文件
+  #     rime-ice/others/recipes/grammar.recipe.yaml
+  # 也就是说这些惩罚值是雾凇作者【针对雾凇自己的词库】调过的，不要自己改。
+  #
+  # 模型文件需要单独下载（420 MB，不进 git，见 README「语法模型」一节）：
+  #     curl -L -o wanxiang-lts-zh-hans.gram \
+  #       https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram
+  # 放在本目录根下即可。文件缺失时部署日志会报找不到语言模型，输入法仍能用，
+  # 只是退化成没有语法模型的状态。
+  grammar:
+    language: wanxiang-lts-zh-hans
+    collocation_max_length: 6
+    collocation_min_length: 3
+    collocation_penalty: -14
+    non_collocation_penalty: -6
+    weak_collocation_penalty: -100
+    rear_penalty: -20
+  # contextual_suggestions：上屏后根据上文预测下一个词。和「又要预测又要连续造句」
+  # 有冲突，官方配方里是关掉的，跟随官方。
+  translator/contextual_suggestions: false
+  translator/max_homophones: 8
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # UUID v7（个人）
+  # ────────────────────────────────────────────────────────────────────────────
+  # 雾凇自带的 lua/uuid.lua 生成的是 UUID v4（纯随机）。个人更常用 v7（时间有序，
+  # 适合做数据库主键）。lua/uuid_v7.lua 是本仓库独有文件。
+  #
+  # 两个 translator 都监听同一个触发词 uuid，v7 的候选 quality 设为 101（v4 是 100），
+  # 所以输入 uuid 时 v7 排在前面、v4 排在后面，两种都能选。
+  # 不想要 v4 的话，把 engine/translators 整表覆盖去掉 lua_translator@*uuid 即可。
+  engine/translators/+:
+    - lua_translator@*uuid_v7
+  uuid_v7: uuid  # 触发词
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 长词优先（个人）
+  # ────────────────────────────────────────────────────────────────────────────
+  # long_word_filter.lua 是雾凇自带的 lua，而且雾凇在【全拼方案】rime_ice.schema.yaml
+  # 里就挂了它；只是 7 个双拼方案 + t9 都没挂（看不出理由，像是加功能时漏改）。
+  # 所以这里不是引入外部功能，是把上游全拼有、双拼漏掉的补回来，连参数都用上游原值。
+  # 效果：把较长的词往前提。输入 jie 原本是「1接 2解 3姐 …」，长词「饥饿」「极恶」
+  # 排在很后面；挂上之后它们会被提到第 4、5 位。
+  #   count: 2  提升几个长词
+  #   idx:   4  提升到第几位（从 1 开始数）
+  #
+  # ★ 挂载位置：跟上游全拼方案对齐 —— pin_cand_filter 之后、reduce_english_filter 之前。
+  #   脚本注释里的硬约束只有「长词优先 > simplifier@emoji」（不然会去提升 emoji 候选），
+  #   但 reduce_english_filter 也在动候选顺序（把短英文压到第 2 位），两者先后不同结果
+  #   就不同，没理由不跟上游一致。挂到 uniquifier 之后更不行 —— 长词会被排到置顶候选
+  #   前面，把固顶功能顶掉。
+  #
+  #   本方案 filters 的顺序（索引从 0 开始）：
+  #     0 corrector  1 radical_reverse_lookup  2 autocap_filter  3 pin_cand_filter
+  #     4 reduce_english_filter  5 simplifier@emoji  6 simplifier@traditionalize
+  #     7 search@radical_pinyin  8 uniquifier
+  #   所以插在索引 4 之前。同步上游后若 filters 列表有增删，这个索引要重新核对
+  #   （对照 rime_ice.schema.yaml 的 filters，跟着 pin_cand_filter 的下一位走）。
+  engine/filters/@before 4: lua_filter@*long_word_filter
+  long_word_filter:
+    count: 2
+    idx: 4
