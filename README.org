@@ -1,0 +1,454 @@
+#+TITLE: 雾凇拼音 · 小鹤双拼（个人精简配置）
+#+AUTHOR: Personal Configuration
+
+[[./light.png]]
+
+[[./dark.png]]
+
+* 说明
+
+基于 [[https://github.com/iDvel/rime-ice][雾凇拼音 (rime-ice)]] 精简出来的个人 Rime 配置，只保留 **小鹤双拼** 一个方案，
+并挂载 [[https://github.com/amzxyz/RIME-LMDG][万象语法模型]]（雾凇官方配方，参数为雾凇词库调校）。
+
+两个结构性决定，详细理由见 =CLAUDE.md=：
+
+1. **本仓库不带 =default.yaml=。** 底座固定为 Squirrel 出厂那份，所有偏离出厂的设定
+   显式写在 =default.custom.yaml= 里。上游改自己的 =default.yaml= 影响不到本配置。
+2. **定制一律走 =*.custom.yaml=，不改 vendored 文件。** 同步上游 = 直接覆盖，
+   补丁自动存活，不需要逐条重放定制。
+
+* 安装与部署
+
+** 一、语法模型（必须单独下载，不在 git 里）
+
+模型 401 MiB，超出 git 合理范围，已列入 =.gitignore=。每个部署目录各下一份：
+
+#+begin_src shell
+curl -L -o wanxiang-lts-zh-hans.gram \
+  https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram
+#+end_src
+
+放在配置目录根下即可。当前使用版本的校验和：
+
+: b4e1d9fd1bcdbe6c80f6c7d5fba2e99c236b09599f05f009a8317dbac1eada26
+
+注意：上游 =LTS= 这个 tag 的附件是 **原地滚动更新** 的，按 tag 下载不保证内容一致。
+两个部署目录的副本要保持同一份，换新版时两处一起换并更新上面的校验和。
+（源仓库 =~/p/Rime= 不需要放 —— Rime 不读它，=rime_deployer --build= 也不加载语法模型。）
+
+模型缺失时输入法仍可用，只是退化成没有语法模型的状态（长句排序变差）。
+
+** 二、本机部署方式
+
+本仓库在本机有两个 live 克隆：
+
+- =~/Library/Rime= —— Squirrel（鼠须管）用户目录
+- =~/.emacs.d/rime= —— emacs-rime 用户目录（=rime-user-data-dir= 默认值）
+
+源仓库保持单提交历史（=git commit --amend=），所以克隆目录不用 =pull=，用 =fetch= + =reset --hard=：
+
+#+begin_src shell
+git fetch /Users/lakki/p/Rime master && git reset --hard FETCH_HEAD
+#+end_src
+
+=reset --hard= 不会动被忽略的未跟踪文件，所以 =.gram= 和用户词库不会丢。
+
+⚠️ **永远不要在 live 克隆里跑 =git clean -xdf=** —— 它会把语法模型、自定义短语、
+用户词库（=*.userdb/=）一起删掉。
+
+然后重新部署：
+
+- 鼠须管：=Squirrel --reload=
+- emacs-rime：重启 Emacs 即可（librime 启动时自动增量部署）；也可以预构建，
+  避免下次启动现场编译大词库：
+
+#+begin_src shell
+rime_deployer --build ~/.emacs.d/rime "/Library/Input Methods/Squirrel.app/Contents/SharedSupport"
+#+end_src
+
+部署后检查日志（=$TMPDIR/rime.squirrel/=）确认无 =E= 级错误。
+
+* 功能一览
+** 日期时间
+关键词直接上屏（=date_translator= 配置）：
+
+| 关键词     | 说明      | 示例                       |
+|-----------+----------+---------------------------|
+| =date=      | 日期      | 2026-07-25                |
+| =time=      | 时间      | 18:13                     |
+| =week=      | 星期      | 星期六                     |
+| =datetime=  | ISO 8601 | 2026-07-25T18:13:11+08:00 |
+| =timestamp= | 时间戳    | 1784974391                |
+| =datezh=    | 中文日期   | 二〇二六年七月二十五日         |
+| =dateen=    | 英文日期   | 25 July 2026              |
+
+** 农历
+- =lunar= ：今天的农历
+- =N= + 公历数字（1~8 位）：公历转农历，如 =N20260725=
+- 输出格式由 =lunar_template= 控制，当前为 ={干支年}{生肖}年{俗称农历月}{农历日}=
+
+** 计算器
+触发前缀 =cC=。支持四则运算、括号、阶乘，以及
+=sin/cos/tan/sqrt/log/avg/var= 等函数。
+
+- =cC1+2*3= → =7=
+- =cCsqrt(2)= → =1.4142135623731=
+
+** Emoji 与扩展候选
+**不需要任何前缀** —— 直接打词的双拼，emoji 作为额外候选跟在词后面。
+
+- =xiao=（笑）→ 候选里有 =笑 😄 😊=
+- =mao=（猫）→ =猫 🐱= ； =qian=（钱）→ =钱 💰= ； =shengqi=（生气）→ =生气 😡 😠 💢=
+- =zhongguo=（中国）→ =中国 🇨🇳=
+
+共 4857 条映射，在 =opencc/emoji.txt=，可自行增删。
+
+★ 容易忽略的一点：**同一个开关还管着另一套完全不是 emoji 的东西**。
+=opencc/emoji.json= 的转换链里除了 =emoji.txt= 还挂了 =opencc/others.txt=（1498 条），
+所以 =💀/😄= 开关一关，下面这些也一起没了：
+
+| 类别         | 例子                              |
+|--------------+-----------------------------------|
+| 月份 / 星期  | =一月= → =Jan. January= ；=星期一= → =Mon. Monday= |
+| 希腊字母     | =阿尔法= → =alpha α Α=            |
+| 数学         | =正无穷= → =+∞=                   |
+| 单位         | =摄氏度= → =°C= ；=平方= → =²=    |
+| 化学式、偏旁部首、笔画标点、音乐符号、二/三/四叠字 | —      |
+
+** 符号（=V= 前缀）
+和上面的 emoji 是两套独立机制。=V= + 类别缩写，出一整排该类符号（=symbols_caps_v.yaml=，
+共 208 个类别）。
+
+★ **记不住就打 =Vhelp= 或 =Vlist=** —— 候选栏会列出全部 71 个大类及其缩写，
+这是这套符号表的入口，不用去翻文件。
+
+常用的几个：
+
+| 输入    | 内容            | 输入    | 内容              |
+|---------+-----------------+---------+-------------------|
+| =Vjt=   | 箭头 ↑↓←→↖↗↙↘   | =Vsx=   | 数学 ±÷×∈∑√∞∠∩∪∫  |
+| =Vhb=   | 货币 ￥¥＄£€₩₽   | =Vdw=   | 单位              |
+| =Vlm= / =Vlmd= | 罗马数字 ⅰⅱⅲ / ⅠⅡⅢ | =Vfs=   | 分数 ½⅓¼          |
+| =Vsb= / =Vxb=  | 上标 ² / 下标 ₂     | =Vxl= / =Vxld= | 希腊字母 α / Α |
+| =Vjh=   | 几何 ○△□◇       | =Vxh=   | 星号 ★☆✦          |
+| =Vbd=   | 标点            | =Vpp= / =Vkx=  | 偏旁 / 部首 |
+| =V0=~=V9= | 数字变体（圈号、带点等） | =Va=~=Vz= | 字母变体 |
+| =Vtg= / =Vdz= / =Vgz= | 天干 / 地支 / 干支 | =Vjq= | 节气 |
+| =Vxq= / =Vmj= / =Vpk= | 象棋 / 麻将 / 扑克 | =Vxz= | 星座 |
+
+** Unicode / 金额大写
+- =U= + 十六进制码位：=U4e2d= → 中
+- =R= + 数字：=R123.45= → 壹佰贰拾叁元肆角伍分（小键盘也能打，见键位表）
+
+** UUID
+输入 =uuid= 同时给出两个候选：
+- **v7**（时间有序，排在前面）—— 本仓库独有的 =lua/uuid_v7.lua=
+- **v4**（纯随机）—— 上游自带的 =lua/uuid.lua=
+
+** 部件拆字反查
+=uU= + 部件双拼，如 =uUmu= → 木。候选注释显示该字读音，适合查生字。
+
+** 辅码筛选
+打字过程中按 =`= 引导，再输入部件码筛选候选。按需触发，不打扰普通输入。
+方案选单里的「正常／单字」开关（=search_single_char=）控制辅码查词时是否单字优先。
+
+** 中英文混输
+- 直接打英文字母给出英文候选（=melt_eng= 次翻译器）
+- 中英混合词汇（=cn_en=）支持 =win10= 这类混排常用词
+- =reduce_english_filter= 会把部分短单词往后压，避免抢占中文候选首位
+
+** 长词优先（补回上游漏挂的）
+=long_word_filter= 把较长的词往前提。输入 =jie= 原本是「1接 2解 3姐 …」，
+长词「饥饿」「极恶」排在很后面；挂上之后提到第 4、5 位。
+
+这个 lua 是雾凇自带的，而且雾凇在**全拼方案** =rime_ice.schema.yaml= 里就挂了它 ——
+只是 7 个双拼方案 + t9 都没挂。所以本仓库通过 =double_pinyin_flypy.custom.yaml= 补回来，
+挂载位置和参数（=count: 2=、=idx: 4=）都跟上游全拼方案一致：
+=pin_cand_filter= 之后、=reduce_english_filter= 之前。
+
+** 以词定字
+输入编码把目标词高亮后，按 =[= 只上屏首字，=]= 只上屏尾字。
+如打 =wego=（魏国）后按 =[= 上屏「魏」，按 =]= 上屏「国」。
+
+** 自定义短语
+编辑 =custom_phrase_double.txt=。
+
+★ 格式是 **=候选词<Tab>编码<Tab>权重=** —— **词在前，编码在后**，别写反了。
+写反不会报错，词条直接静默失效。权重可省略，同编码下数字越大越靠前。
+编码可以随便起，不限于双拼。
+
+#+begin_src text
+工程	gc
+打开	dk
+name@example.com	yx
+#+end_src
+
+方案里 =custom_phrase/initial_quality: 99=，高于拼音和英文，所以这里写的词会顶到最前面。
+
+** 自动调频与造词（默认开着）
+
+方案的主翻译器没有写 =enable_user_dict=，librime 默认即为 =true=，所以**用着用着会自己变**：
+
+- **调频**：你选过的候选下次会往前排
+- **造词**：上屏的字词组合会被记进用户词典，下次能整串打出来
+
+数据存在 =rime_ice.userdb/=（二进制 LevelDB，不进 git）。
+
+**不参与学习的**（上游有意关掉，避免污染）：
+
+| 翻译器                | 设置                     |
+|-----------------------+--------------------------|
+| =melt_eng= 英文       | =enable_user_dict: false= |
+| =radical_lookup= 部件拆字 | =enable_user_dict: false= |
+| =custom_phrase= 自定义短语 | =db_class: stabledb=（只读） |
+| =cn_en= 中英混合词汇  | =db_class: stabledb=（只读） |
+
+**万象语法模型不学习** —— =.gram= 是静态文件，不随使用变化。它管「句子结构是否合理」，
+用户词典管「你个人偏好」，两者叠加生效。
+
+*** 学错了怎么撤销
+候选高亮时按 **=Ctrl+Delete=**（=editor/bindings= 里的 =delete_candidate=，删除或降权候选项）。
+这是唯一的内置反悔手段。想要更强的（无视编码强制删词、把词降到第 4 位而不是删掉），
+需要挂上游自带但本仓库没拿的 =lua/cold_word_drop/=。
+
+*** 两个前端各学各的，靠 sync 合并
+Squirrel 和 emacs-rime 是两个独立的 Rime 实例，各有各的 =rime_ice.userdb/=，本身互不相通。
+本机已配置 Rime 自带的同步把两边合并，同步目录设在 Dropbox：
+
+: /Users/lakki/Library/CloudStorage/Dropbox/RimeSync/
+
+**同步机制**（=librime/src/rime/lever/user_dict_manager.cc=）：每个实例把自己的用户词典
+全量导出到 =<sync_dir>/<installation_id>/<词典名>.userdb.txt=；同步时遍历 =sync_dir= 下
+**所有**子目录，把找到的每个快照 merge 进本地库，然后再全量导出一次。
+源码里**没有「跳过自己的目录」的逻辑**，所以是「先合并、再导出合并后的全集」，会收敛。
+
+**配置**（写在各自的 =installation.yaml=，该文件不进 git，换机器要手工重做）：
+
+| 实例       | =installation_id= | 位置                            |
+|------------+-------------------+---------------------------------|
+| 鼠须管     | =squirrel-macmini= | =~/Library/Rime/installation.yaml= |
+| emacs-rime | =emacs-macmini=    | =~/.emacs.d/rime/installation.yaml= |
+
+两边都加上：
+
+#+begin_src yaml
+installation_id: "squirrel-macmini"   # emacs 侧写 emacs-macmini
+sync_dir: "/Users/lakki/Library/CloudStorage/Dropbox/RimeSync"
+#+end_src
+
+=installation_id= 只在**为空时**才由 librime 自动生成，写死之后就一直沿用，不会被重新部署冲掉。
+
+★ **两边的 ID 必须不同。** 相同也能同步（见上面的机制），但会有两个坏处：
+两个进程写 Dropbox 里同一个文件路径 → 产生「冲突副本」；只有一份快照 →
+哪边的 userdb 被重置，它导出的小集合就直接盖掉那份唯一快照，另一边的数据没有备份。
+
+**触发同步**：
+
+- 鼠须管：菜单「同步用户数据」，或 =Squirrel --sync=
+- emacs-rime：=M-x rime-sync=
+
+⚠️ 改完 =installation.yaml= 必须**先重新部署**（=Squirrel --reload= / 重启 Emacs）才会读到新值 ——
+=installation_id= 和 =sync_dir= 是部署期任务 =InstallationUpdate= 读的，单跑 =--sync= 不会重读。
+
+*** 同步目录里还会有什么
+部署时的 =BackupConfigFiles= 任务会把**用户目录顶层**的 =.yaml= / =.txt= 一并备份过去
+（不递归，所以 =cn_dicts/= 那 44 MB 不会进 Dropbox；生成的 build 产物会被跳过）。
+当前是 15 个文件，其中最大的是 =radical_pinyin.dict.yaml= 2.1 MB。有校验和比对，
+没变的文件不会重复上传。
+
+*** 备份 / 导出
+#+begin_src shell
+rime_dict_manager -e rime_ice ~/rime_ice_learned.txt
+#+end_src
+
+需要先退出鼠须管 —— 数据库被占用时会报 =Error opening db 'rime_ice' read-only=。
+
+** 错音错字提示
+=corrector.lua= 会在候选中标出可能的错音错字，无需额外按键。
+
+** 开关（方案选单 =F4= 或 =Ctrl+`=）
+
+| 开关       | 状态       | 说明                 |
+|-----------+-----------+---------------------|
+| 中 / Ａ    | 中文 / 英文 | 中英输入              |
+| ¥ / $     | 中标 / 英标 | 中英标点              |
+| 简 / 繁    | 简体 / 繁体 | 简繁转换（=s2t.json=） |
+| 💀 / 😄   | 关 / 开    | Emoji **及 =others.txt= 的全部扩展候选**（上游默认开启） |
+| 半角 / 全角 | —         | 全半角字符            |
+| 词 / 单    | 正常 / 单字 | 辅码查词时是否单字优先   |
+
+其中「中文/英文」不被记忆（每次启动都是中文，见 =CLAUDE.md= 硬规则 3），
+Emoji 因方案里设了 =reset: 1= 也不被记忆，其余会记住。
+
+* 键位
+
+方案选单 =F4= / =Ctrl+`= / =Ctrl+Shift+`=
+
+| 按键                | 行为                                   |
+|---------------------+----------------------------------------|
+| =Tab=               | 原始编码一次性上屏（个人定制）         |
+| =Shift+Tab=         | 光标跳到上一个拼音                     |
+| =Alt+←= / =Alt+→=   | 光标在拼音音节间移动                   |
+| =，= / =。=         | 上一页 / 下一页                        |
+| =[= / =]=           | 以词定字：上屏候选词的首字 / 尾字      |
+| 左 Shift            | 行内临时英文（回车上屏后自动回中文）   |
+| 右 Shift            | 上屏已拼出的词句并切英文               |
+| =Ctrl+Shift+3=      | 切换中英标点                           |
+| =Ctrl+Shift+4=      | 切换简繁                               |
+| 小键盘 =0~9= / =.=  | 映射到主键盘（配合 =R= 金额大写）      |
+
+Emacs 编辑键位（引自共享目录 =key_bindings.yaml= 的 =emacs_editing= 组）：
+
+| 按键                | 行为          | 在 Emacs 内是否生效 |
+|---------------------+---------------+---------------------|
+| =Ctrl+P= / =Ctrl+N= | 上 / 下选候选 | ✅                  |
+| =Ctrl+B= / =Ctrl+F= | 左 / 右移光标 | ✅                  |
+| =Ctrl+G=            | 取消输入      | ✅                  |
+| =Ctrl+V= / =Alt+V=  | 下一页 / 上一页 | ✅                |
+| =Ctrl+A= / =Ctrl+E= | 行首 / 行尾   | ❌ 仅鼠须管         |
+| =Ctrl+D=            | 删除后一字符  | ❌ 仅鼠须管         |
+| =Ctrl+K=            | ⚠️ 见下       | ❌ 仅鼠须管         |
+| =Ctrl+H=            | 退格          | ❌ 仅鼠须管         |
+| =Ctrl+Y=            | 上一页        | ❌ 仅鼠须管         |
+
+⚠️ **这组键位在 Emacs 里只有一半生效**，不是配置的问题，是 emacs-rime 的转发白名单决定的：
+=~/.emacs.d/lisp/init-chinese.el= 里
+
+#+begin_src elisp
+rime-translate-keybindings '("C-f" "C-b" "C-n" "C-p" "C-g" "C-v" "M-v")
+#+end_src
+
+只有列在这里的按键才会被交给 librime，其余仍由 Emacs 自己处理。想让 =C-a= / =C-e= /
+=C-d= / =C-k= / =C-h= / =C-y= 在候选栏里也生效，就往这个列表里加。
+
+⚠️ **，。翻页的两条规则是不对称的**（出厂 =paging_with_comma_period= 组的原样）：
+
+- 逗号 =when: paging= —— 只有**已经翻过页**之后才回上一页；停在第一页时逗号照常上屏「，」
+- 句号 =when: has_menu= —— 只要候选栏开着就一律翻页，**打字过程中句号无法直接上屏**。
+  正常写法是先上屏词、候选栏关掉，再打「。」，跟搜狗/微信输入法的默认行为一致
+
+⚠️ **=Ctrl+V= / =Ctrl+Y= / =Alt+V= 翻页在部分 app 里不可靠。** 已确认 Chrome 地址栏中
+第二次按 =Ctrl+V= 会穿透成粘贴。Rime 侧的配置和 librime 1.13.0 的
+=KeyBinder= / =Selector::NextPage= 都验证过是会吞掉按键的，问题出在 app 的事件转发，
+Rime 无从干预。**日常翻页用 =，。=，别依赖 Ctrl+V。**
+
+出厂 =default.yaml= 默认启用的 =-= ~=~ 翻页（=paging_with_minus_equal=）本仓库**刻意没引** ——
+=，。= 已经够用，而占着 =-= ~=~ 会导致候选栏开着时打不出这两个字符（如 =2-3=、=a=b=）。
+
+⚠️ =Ctrl+K= 送出的是 =Shift+Delete=（出厂 =emacs_editing= 组的原样），但本方案的
+=editor/bindings= 里**没有 =Shift+Delete= 这个绑定**（见下表），所以它大概率不产生任何动作。
+真正的「删词」是 =Ctrl+Delete=。
+
+⚠️ 同理，**=Tab= 在 Emacs 里不是「原始编码上屏」**。=init-chinese.el= 里有
+
+#+begin_src elisp
+(define-key rime-active-mode-map [tab] 'rime-inline-ascii)
+#+end_src
+
+elisp 层先截走了 Tab 用作「切行内临时英文」，librime 的 =Tab → Return= 补丁在 Emacs 内
+根本收不到这个键。鼠须管里则是本仓库定义的行为。
+
+* 文件构成
+
+** 个人文件（6 个 + 1 个数据文件）
+
+| 文件                             | 作用                                       |
+|----------------------------------+--------------------------------------------|
+| =default.custom.yaml=            | 交互语义 + 搬自上游的 punctuator/recognizer |
+| =double_pinyin_flypy.custom.yaml= | 万象模型、uuid_v7、长词优先                |
+| =melt_eng.custom.yaml=           | 英文方案的双拼拼写派生规则                 |
+| =radical_pinyin.custom.yaml=     | 部件拆字的双拼拼写派生规则                 |
+| =squirrel.custom.yaml=           | Dvorak、扁平主题、指定 app 默认英文        |
+| =lua/uuid_v7.lua=                | UUID v7（上游自带的是 v4）                 |
+| =custom_phrase_double.txt=       | 自定义短语（模板）                         |
+
+每个文件内部都写了逐项注释：这一项是干嘛的、Rime 出厂默认是什么、上游改成了什么、
+为什么这么设、不加会怎样，以及可选值的示例。
+
+** 上游文件（vendored，同步时整体覆盖，不要手改）
+
+- =double_pinyin_flypy.schema.yaml=
+- =rime_ice.dict.yaml= + =cn_dicts/= （=8105= =base= =ext= =tencent= =others=）
+- =melt_eng.{schema,dict}.yaml= + =en_dicts/= （=en= =en_ext= =cn_en_flypy.txt=）
+- =radical_pinyin.{schema,dict}.yaml=
+- =symbols_caps_v.yaml=
+- =opencc/= （=emoji.json= =emoji.txt= =others.txt=，仅此 3 个）
+- =lua/= 15 个 + =lunar.db=
+
+** 不进 git
+
+=*.gram=（语法模型）、=*.userdb/=、=user.yaml=、=installation.yaml=、=sync/=、=build/=
+
+* 同步流程
+
+** 主体（rime-ice）
+
+1. =cd ~/p/rime-ice && git pull=
+2. 按下面的清单精选同步，每个目录只拿列出的部分：
+   - =double_pinyin_flypy.schema.yaml=、=rime_ice.dict.yaml=、
+     =melt_eng.{schema,dict}.yaml=、=radical_pinyin.{schema,dict}.yaml=、
+     =symbols_caps_v.yaml= —— 整体覆盖（定制在 =*.custom.yaml= 里，不受影响）
+   - =cn_dicts/= —— 5 个：=8105= =base= =ext= =tencent= =others=（=41448= 大字表上游默认不启用）
+   - =en_dicts/= —— 3 个：=en.dict.yaml= =en_ext.dict.yaml= =cn_en_flypy.txt=
+     （上游的 =cn_en.txt= 是生成各双拼变体的源表，本方案只用 =cn_en_flypy=，不拿；
+     其余 6 个双拼变体的 =cn_en_*.txt= 同理不拿）
+   - =opencc/= —— 3 个：=emoji.json= =emoji.txt= =others.txt=
+   - =lua/= —— 只拿方案实际挂载的：=select_character= =corrector= =autocap_filter=
+     =pin_cand_filter= =reduce_english_filter= =search= =date_translator=
+     =convert_ar_num_to_zh=（=date_translator= 的依赖）=lunar=（+ =lunar.db=）=uuid=
+     =unicode= =number_translator= =calc_translator= =force_gc= =long_word_filter=。
+     本仓库独有的 =lua/uuid_v7.lua= 要保留，不要被覆盖误删
+3. **不拿**：=default.yaml=（★ 见 =CLAUDE.md= 硬规则 1）、其余 7 个双拼/全拼/t9 方案、
+   =symbols_v.yaml=、=squirrel.yaml=、=weasel.yaml=、=custom_phrase.txt=（全拼用的）、
+   整个 =others/= 目录
+4. 核对两处会影响本仓库的上游变动：
+   - =rime-ice/default.yaml= 的 =punctuator=（122–191 行）和 =recognizer=（196–205 行）
+     有没有变，变了同步到 =default.custom.yaml=
+   - =double_pinyin_flypy.schema.yaml= 的 =engine/filters= 列表有没有增删，变了要调整
+     =double_pinyin_flypy.custom.yaml= 里 =engine/filters/@before 4= 的索引
+5. 核对 =melt_eng.custom.yaml= / =radical_pinyin.custom.yaml= 引用的
+   =algebra_double_pinyin_flypy= 节点名在新版上游里是否还在
+
+** 语法模型
+
+不随雾凇变动。要换新版时三个部署目录一起换，并更新本文档的校验和。
+
+* 编译验证与验证清单
+
+改完配置先在 scratchpad 编译：
+
+#+begin_src shell
+rime_deployer --build <目录> "/Library/Input Methods/Squirrel.app/Contents/SharedSupport"
+#+end_src
+
+⚠️ =rime_deployer= **不往 stderr 写日志**，重定向它的输出会得到空文件。真正的日志在
+glog 文件里：=$TMPDIR/rime.tools.*=（deployer）、=$TMPDIR/rime.squirrel/=（鼠须管）、
+=$TMPDIR/rime.emacs.*=（emacs-rime）。
+
+验收三件事：退出码 0；对应的 =*.ERROR= 日志为空；**编译产物 =build/*.yaml=** 里补丁按预期
+合并了（=key_binder/bindings= 的 =__patch= + =/+= 结果、=engine/filters= 的插入位置、
+=melt_eng= / =radical_pinyin= 的 =speller/algebra= 是小鹤而不是全拼）。
+
+已知良性警告：=circular dependencies detected in melt_eng.schema= —— =*.custom.yaml= 里
+=__include: melt_eng.schema.yaml:/algebra_*= 引用的正是自己要打补丁的文件，形式上成环，
+但 algebra 实测能正确解析（这是雾凇官方 =others/patch_examples/= 的推荐写法）。
+
+手工验证清单：
+
+- [ ] 小鹤双拼日常打字、长句造句（能感觉到语法模型是否生效）
+- [ ] =uU= 部件拆字反查、=`= 辅码筛选
+- [ ] =cC= 计算器、=V= 符号、=U= Unicode、=R= 金额（含小键盘）
+- [ ] =date= / =week= / =datezh= / =lunar= / =N20260725=
+- [ ] =uuid=（v7 应排在 v4 前面）
+- [ ] 长词优先：打 =jie=，「饥饿」「极恶」应在第 4、5 位
+- [ ] 以词定字：打 =wego= 后按 =[= 出「魏」、按 =]= 出「国」
+- [ ] =Tab= 原始编码上屏、=-= ~=~ 翻页
+- [ ] 标点：=1,000= 不被转成中文逗号；=/= 直接上屏半角；~`~ 出间隔号 =·=
+- [ ] ★ **Emacs 专项**：打中文 → 空格 → 打英文 → 再打中文（Shift_L 那个 bug 的复现路径）
+- [ ] ★ **Emacs 专项**：=Ctrl+P/N/B/F/G=、=Ctrl+V= / =Alt+V= 翻页
+
+* 原始项目
+
+- [[https://github.com/iDvel/rime-ice][雾凇拼音 rime-ice]] —— 词库与方案底座（GPL 3.0）
+- [[https://github.com/amzxyz/RIME-LMDG][万象语法模型 RIME-LMDG]] —— 语法模型
+- [[https://rime.im/][Rime 输入法引擎]]

@@ -1,0 +1,357 @@
+# ==============================================================================
+# 雾凇拼音 · 小鹤双拼 —— 个人 default 补丁
+# ==============================================================================
+#
+# 【本仓库刻意不带 default.yaml】
+#
+# Rime 读配置的顺序是：共享目录的 default.yaml  ←  用户目录的 default.yaml（若存在，
+# 整份顶掉共享那份）  ←  用户目录的 default.custom.yaml（打补丁）。
+#
+# 雾凇会在用户目录塞一份自己的 default.yaml，把 Rime 出厂的交互语义整份换掉，
+# 而且改了什么完全不会有编译报错。本仓库不带 default.yaml，
+# 底座固定为 Squirrel 出厂那份：
+#     /Library/Input Methods/Squirrel.app/Contents/SharedSupport/default.yaml
+# 所有偏离出厂的设定都必须显式写在本文件里，本文件原样带走，操作逻辑就是固定的。
+#
+# 代价：方案文件对 default.yaml 有两处硬依赖，出厂那份满足不了，必须由本文件补上：
+#   1. double_pinyin_flypy.schema.yaml  →  __include: default:/punctuator
+#   2. double_pinyin_flypy.schema.yaml  →  recognizer: import_preset: default
+# 这两块下面都标了「搬自上游」，同步雾凇时要对照 rime-ice/default.yaml 更新。
+#
+# 下面每一项都写了：作用 / Rime 出厂默认 / 雾凇的值 / 为什么这么设 / 不加会怎样。
+#
+# 原则：出厂默认已经是想要的，就【不写】，只留注释说明为什么不用写 —— 写了既是噪音，
+#       整块覆盖时还容易把出厂的兄弟项一起丢掉（见 switcher 和 ascii_composer 两处）。
+#       所以补丁尽量用 a/b/c 这种路径形式，只动一个叶子，不要整块写 a: 再嵌套。
+# ==============================================================================
+
+patch:
+  # ────────────────────────────────────────────────────────────────────────────
+  # schema_list —— 方案选单里有哪些输入方案
+  # ────────────────────────────────────────────────────────────────────────────
+  # 出厂默认：朙月拼音、朙月简化字、朙月竞速、注音、注音·台湾、仓颉五代、五笔画、
+  #           地球拼音，共 8 个
+  # 雾凇的值：雾凇全拼 + 九宫格 + 7 种双拼，共 9 个
+  # 为什么加：这两组方案本仓库一个都没带，留着只会让方案选单全是「加载失败」的条目
+  # 不加会怎样：Ctrl+` 弹出的选单里是「朙月拼音／注音／仓颉／五笔画…」，全部因缺
+  #             .schema.yaml 而报错，自己的小鹤双拼反而不在列表里
+  #
+  # 示例｜以后想加第二个方案（比如虎码）就追加一行，顺序即选单顺序：
+  #   schema_list:
+  #     - schema: double_pinyin_flypy
+  #     - schema: huma
+  schema_list:
+    - schema: double_pinyin_flypy
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # menu/page_size —— 候选栏一页显示几个候选
+  # ────────────────────────────────────────────────────────────────────────────
+  # 出厂默认：5
+  # 雾凇的值：5（同出厂）
+  # 为什么加：纯个人口味，5 个太少、翻页太频繁；7 个在横排候选栏下宽度还能接受
+  # 不加会怎样：回到 5 个，功能上没问题
+  #
+  # 注意｜这个值受方案的选字键占用影响 —— 有的方案会把数字键拿去做别的用途，那就设不了
+  #       那么大。雾凇没有这个限制，1~10 都行。
+  menu/page_size: 7
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # switcher —— 方案选单（Ctrl+` 弹出的那个）
+  # ────────────────────────────────────────────────────────────────────────────
+  # 用 switcher/xxx 逐项打补丁，不要整块写 switcher:
+  # —— 整块写会把出厂的 hotkeys / abbreviate_options 一起替换掉。
+  #
+  # 【出厂就够用，不设】
+  #   hotkeys —— 出厂已是 Control+grave / Control+Shift+grave / F4，三个都在
+  #   abbreviate_options —— 出厂已是 true（折叠时把开关名缩写成一个字）
+  #
+  # caption：选单标题。出厂是繁体的〔方案選單〕，改成简体的直角引号。
+  # 不加会怎样：标题显示〔方案選單〕，纯观感问题。
+  switcher/caption: 「方案选单」
+
+  # save_options：「哪些开关的状态会被记住、写进 user.yaml 跨重启还原」。
+  #
+  # 出厂默认：full_shape / ascii_punct / simplification / extended_charset /
+  #           zh_hant / zh_hans / zh_hant_tw —— 后五个是朙月系方案的开关，本方案没有，
+  #           所以照用出厂的话等于只记住 full_shape 和 ascii_punct，简繁、Emoji 都不记
+  # 雾凇的值：和这里列的 5 个一致
+  #
+  # ★ 关键是列表里【没有 ascii_mode】★：一旦把 ascii_mode 加进去，输入法卡在英文状态
+  #   时这个状态会被存盘，重启、重新部署都救不回来。出厂和雾凇默认都不记它，这里显式
+  #   钉死，防止哪天上游加进去。
+  # 注意：方案里设了 reset: 的开关（如本方案的 emoji）不受 save_options 管，
+  #       每次都回到 reset 指定的状态。
+  switcher/save_options:
+    - ascii_punct
+    - traditionalization
+    - emoji
+    - full_shape
+    - search_single_char
+
+  # fold_options：选单里的开关是折叠成一行，还是每个开关占一行。
+  # 出厂默认：true（折叠）
+  # 为什么改：只有一个方案时展开更好用，能直接看到「简体/繁体」「半角/全角」等状态
+  #
+  # 示例｜以后方案多了想折叠回去：
+  #   fold_options: true    →  选单显示「中文 / 简体 / 半角 / 。，」一行
+  #   fold_options: false   →  每个开关单独一行
+  switcher/fold_options: false
+
+  # option_list_separator：折叠显示时的开关分隔符。
+  # 出厂默认：全角的 '／'。改成半角斜杠加空格，窄一些。
+  switcher/option_list_separator: ' / '
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # ascii_composer —— 中英切换键的行为   【出厂就是对的，不设，但必须知道它的存在】
+  # ────────────────────────────────────────────────────────────────────────────
+  # 作用：打字打到一半按下 CapsLock / Shift / Control 时怎么处理。可选值：
+  #   commit_code   上屏【原始编码】，然后把会话切到英文（且停在英文，要再按一次才回来）
+  #   commit_text   上屏【拼出的词句】，然后切到英文
+  #   clear         清空未上屏内容，然后切到英文
+  #   inline_ascii  切到「行内临时英文」：编码转成英文可继续输入，回车上屏后【自动回中文】
+  #   noop          屏蔽这个键，什么都不做
+  #
+  # 出厂默认：good_old_caps_lock: true
+  #           Shift_L: inline_ascii   Shift_R: commit_text
+  #           Caps_Lock: clear        Eisu_toggle: clear
+  #           Control_L: noop         Control_R: noop
+  # 雾凇的值：Shift_L: commit_code    Shift_R: noop（其余同出厂）
+  #
+  # ★★ 这是本仓库「不带 default.yaml」这个决定的最大收益点 ★★
+  #   emacs-rime 的「行内临时英文」（rime-inline-predicates，比如中文后打空格、
+  #   打大写字母时自动触发）是靠【向 librime 伪造一次左 Shift 按键】实现的。
+  #   左 Shift 若是 commit_code，这一次伪造按键会把整个会话永久切到西文，表现为
+  #   「rime 明明开着，但再也打不出中文」—— 之前查了很久的那个 bug 就是这么来的。
+  #
+  #   出厂默认的 inline_ascii 恰恰就是我们要的，所以【这里一行都不用写】。
+  #   一旦哪天仓库里出现了 default.yaml（雾凇那份是 commit_code），这个 bug 立刻复发，
+  #   而且没有任何编译报错。所以真正的防线是「不带 default.yaml」，不是在这里打补丁。
+  #
+  #   顺带：整块写 ascii_composer: 反而会把出厂的 Eisu_toggle: clear 丢掉。
+  #
+  # 示例｜真要改右 Shift 的话：
+  #   Shift_R: commit_text   →  打「nihao」按右 Shift，上屏「你好」并切英文（出厂）
+  #   Shift_R: noop          →  打「nihao」按右 Shift，什么都不发生（雾凇的选择）
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # punctuator —— 标点符号映射                          【搬自上游，非个人口味】
+  # ────────────────────────────────────────────────────────────────────────────
+  # 出厂默认：full_shape / half_shape 都是 __include: punctuation:/...（朙月那套），
+  #           且【没有 digit_separators】
+  # 雾凇的值：自己写了一整套表 + digit_separators
+  #
+  # 为什么加：double_pinyin_flypy.schema.yaml 里写着
+  #     punctuator:
+  #       __include: default:/punctuator          # 为了引用 digit_separators 等属性
+  #   删掉 default.yaml 之后，这个 __include 会落到出厂那份上，于是：
+  #     - digit_separators 丢失
+  #     - 标点全变成朙月那套（多候选而非直接上屏）
+  #
+  # 不加会怎样（两个具体差异）：
+  #     打 1,000     朙月表下 ',' 会被转成中文逗号 →「1，000」；有 digit_separators 才是「1,000」
+  #     打 /         朙月表给出候选「、 / ／ ÷」要再选一次；雾凇表直接上屏半角 /
+  #     打 `         朙月表出反引号 `；雾凇表出间隔号 ·
+  #
+  # 下面整块照抄自 rime-ice/default.yaml 第 122–191 行。同步上游时对照更新。
+  # digit_separators：在数字后输入这些字符，若再输数字则连同数字直接上屏；双击恢复映射。
+  #                   需要 librime >= 1.13.0。
+  punctuator:
+    digit_separators: ",.:"  # 在此处指定的字符，在数字后被输入，若再次输入数字，则连同数字直接上屏；若双击，则恢复映射。 # librime >= 1.13.0
+    # digit_separator_action: commit  # 关闭上述行为 librime >= 1.13.1
+    full_shape:
+      ' ' : { commit: '　' }
+      ',' : { commit: ， }
+      '.' : { commit: 。 }
+      '<' : [ 《, 〈, «, ‹ ]
+      '>' : [ 》, 〉, », › ]
+      '/' : [ ／, ÷ ]
+      '?' : { commit: ？ }
+      ';' : { commit: ； }
+      ':' : { commit: ： }
+      '''' : { pair: [ '‘', '’' ] }
+      '"' : { pair: [ '“', '”' ] }
+      '\' : [ 、, ＼ ]
+      '|' : [ ·, ｜, '§', '¦' ]
+      '`' : ｀
+      '~' : ～
+      '!' : { commit: ！ }
+      '@' : [ ＠, ☯ ]
+      '#' : [ ＃, ⌘ ]
+      '%' : [ ％, '°', '℃' ]
+      '$' : [ ￥, '$', '€', '£', '¥', '¢', '¤' ]
+      '^' : { commit: …… }
+      '&' : ＆
+      '*' : [ ＊, ·, ・, ×, ※, ❂ ]
+      '(' : （
+      ')' : ）
+      '-' : －
+      '_' : ——
+      '+' : ＋
+      '=' : ＝
+      '[' : [ 「, 【, 〔, ［ ]
+      ']' : [ 」, 】, 〕, ］ ]
+      '{' : [ 『, 〖, ｛ ]
+      '}' : [ 』, 〗, ｝ ]
+    half_shape:
+      ',' : '，'
+      '.' : '。'
+      '<' : '《'
+      '>' : '》'
+      '/' : '/'
+      '?' : '？'
+      ';' : '；'
+      ':' : '：'
+      '''' : { pair: [ '‘', '’' ] }
+      '"' : { pair: [ '“', '”' ] }
+      '\' : '、'
+      '|' : '|'
+      '`' : '·'
+      '~' : '~'
+      '!' : '！'
+      '@' : '@'
+      '#' : '#'
+      '%' : '%'
+      '$' : '¥'
+      '^' : '……'
+      '&' : '&'
+      '*' : '*'
+      '(' : '（'
+      ')' : '）'
+      '-' : '-'
+      '_' : ——
+      '+' : '+'
+      '=' : '='
+      '[' : '【'
+      ']' : '】'
+      '{' : '「'
+      '}' : '」'
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # recognizer/patterns —— 哪些输入串要「特殊对待」    【搬自上游，非个人口味】
+  # ────────────────────────────────────────────────────────────────────────────
+  # 作用：符合这些正则的输入不走拼音翻译，原样保留（网址、邮箱、下划线标识符等）
+  #
+  # 出厂默认：email / uppercase / url
+  # 雾凇的值：email / url / underscore  —— 【故意去掉了 uppercase，加了 underscore】
+  #
+  # 为什么加：double_pinyin_flypy.schema.yaml 里写着
+  #     recognizer:
+  #       import_preset: default    # 从 default.yaml 继承通用的
+  #       patterns:                 # 再增加方案专有的（punct / radical_lookup / unicode …）
+  #   删掉 default.yaml 后，import_preset 会继承出厂那套，把 uppercase 带回来。
+  #   而雾凇的英文输入是靠 melt_eng 次翻译器 + autocap_filter.lua 做的，不需要也
+  #   不希望 uppercase 这条规则。
+  #
+  # 不加会怎样：
+  #     打 Hello   uppercase 规则会把整串当原文段落 → 只能上屏「Hello」，
+  #                melt_eng 的英文候选（Hello / hello / HELLO 大小写变体）出不来
+  #     打 a_b     没有 underscore 规则 → 下划线会被当标点上屏，打断输入
+  #
+  # 示例｜想让 google.com、abc.txt 这类句点串也不上屏（代价：不能用句点翻页）：
+  #     url_2: "^[A-Za-z]+[.].*"
+  # 示例｜想让 http:// 之外的冒号串也不上屏：
+  #     colon: "^[A-Za-z]+:.*"
+  recognizer/patterns:
+    email: "^[A-Za-z][-_.0-9A-Za-z]*@.*$"                            # email @ 之后不上屏
+    url: "^(www[.]|https?:|ftp[.:]|mailto:|file:).*$|^[a-z]+[.].+$"  # URL
+    underscore: "^[A-Za-z]+_.*"                                      # 下划线不上屏
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # key_binder/select_first_character / select_last_character —— 以词定字
+  # ────────────────────────────────────────────────────────────────────────────
+  # 作用：配合方案里的 lua_processor@*select_character，把高亮候选词的首字/尾字单独上屏
+  #
+  # 出厂默认：【没有这两项】，出厂 default.yaml 里根本没有 select_first_character
+  # 雾凇的值：bracketleft / bracketright（即 [ 和 ]）
+  # 为什么加：删掉 default.yaml 之后这两项就没了，select_character.lua 读不到按键配置，
+  #           以词定字功能静默失效（不会报错）
+  # 不加会怎样：打 wego 高亮「魏国」后按 [ ，直接上屏一个「【」而不是「魏」
+  #
+  # 冲突提醒｜如果以后想启用 [ ] 翻页（key_bindings:/paging_with_brackets），
+  #           必须先把这两个键改成别的，否则 [ ] 会被翻页抢走。
+  key_binder/select_first_character: bracketleft
+  key_binder/select_last_character: bracketright
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # key_binder/bindings —— 编辑与翻页键位
+  # ────────────────────────────────────────────────────────────────────────────
+  # 作用：在输入过程中把某个按键重定向成另一个按键，或直接切换开关
+  #
+  # 出厂默认：__patch 引入 emacs_editing + move_by_word_with_tab +
+  #           paging_with_minus_equal + paging_with_comma_period + numbered_mode_switch
+  # 雾凇的值：自己写死一份，【emacs_editing 整组被注释掉了】，Tab 是跳音节，
+  #           另外带了一组小键盘映射
+  #
+  # 出厂那套里 move_by_word_with_tab（Tab 跳音节）、paging_with_comma_period（逗号句号
+  # 翻页）、numbered_mode_switch 三组不要，所以不能直接沿用出厂，得自己组一份。
+  #
+  # 这里分两段写：
+  #   第一段 __patch 直接引用共享目录 key_bindings.yaml 里的现成分组（出厂就有的东西，
+  #          没必要手抄一遍）；
+  #   第二段 /+ 追加个人自己的绑定。
+  #
+  # ★ 为什么要引 emacs_editing：
+  #   出厂 default.yaml 默认就 __patch 了这一组（Ctrl+P/N/B/F/A/E/D/K/H/G、
+  #   Ctrl+Y/Alt+V 上翻、Ctrl+V 下翻）。雾凇把它整组注释掉了。
+  #   一旦仓库自带 default.yaml 顶掉出厂那份而又没补回来，这组键位会【静默失效】，
+  #   没有任何编译报错。本仓库不带 default.yaml，所以是主动引回来。
+  #   不加会怎样：候选栏里 Ctrl+N/P 不能上下选词，Ctrl+V/Alt+V 不能翻页。
+  #
+  # ★ 关于 ，。翻页（paging_with_comma_period）—— 出厂那组的两条 when 是【不对称】的：
+  #     - { when: paging,   accept: comma,  send: Page_Up }
+  #     - { when: has_menu, accept: period, send: Page_Down }
+  #   comma 用 paging：只有【已经翻过页】之后逗号才回上一页；停在第一页时逗号照常上屏
+  #   「，」。所以逗号基本不受影响。
+  #   period 用 has_menu：只要候选栏开着，句号就一律翻页 —— 代价是【打字过程中句号无法
+  #   直接上屏】。正常写法是先上屏词、候选栏关掉，再打「。」，跟搜狗/微信输入法的默认
+  #   行为一致。不能接受的话把这一行 __patch 去掉即可。
+  #
+  # 示例｜想再启用中括号翻页 / Ctrl+Shift+数字切换开关：
+  #     - key_bindings:/paging_with_brackets       # 注意：和上面的以词定字冲突
+  #     - key_bindings:/numbered_mode_switch       # 注意：它 toggle 的是出厂开关名
+  #                                                #（simplification 等），本方案叫
+  #                                                # traditionalization，对不上，别用
+  key_binder/bindings:
+    __patch:
+      - key_bindings:/emacs_editing            # Ctrl+P/N/B/F/A/E/D/K/H/G、Ctrl+Y/V 翻页
+      - key_bindings:/paging_with_comma_period # ，。翻页
+      # 【不引】key_bindings:/paging_with_minus_equal —— - = 翻页。
+      #   出厂 default.yaml 默认引了这一组，这里刻意不引：一是 ，。已经够用，
+      #   二是占着 - = 会导致候选栏开着时打不出这两个字符（如 2-3、a=b）。
+
+  # 个人追加的绑定（用 /+ 追加，不覆盖上面 __patch 的结果）
+  key_binder/bindings/+:
+    # Tab：把原始编码一次性上屏。
+    #   出厂和雾凇的 Tab 都是「把光标跳到下一个拼音音节」（出厂经
+    #   key_bindings:/move_by_word_with_tab 引入，雾凇写死在 default.yaml）。
+    #   这里是个人定制：Tab → Return，而 Return 的默认动作就是上屏原始输入。
+    #   不加会怎样：Tab 变回跳音节；想原样上屏字母得按 Return 或换用左 Shift 行内英文。
+    - { when: composing, accept: Tab, send: Return }
+    # Shift+Tab 保留「跳到上一个拼音」（出厂 move_by_word_with_tab 里的行为）。
+    # ISO_Left_Tab 是部分前端上报 Shift+Tab 的另一种形式，出厂那组里也有，一并补上。
+    - { when: composing, accept: Shift+Tab, send: Shift+Left }
+    - { when: composing, accept: ISO_Left_Tab, send: Shift+Left }
+    # Option/Alt + ←/→ 在拼音音节之间移动光标（雾凇有，出厂没有）
+    - { when: composing, accept: Alt+Left, send: Shift+Left }
+    - { when: composing, accept: Alt+Right, send: Shift+Right }
+    # Ctrl+Shift+3 切中英标点、Ctrl+Shift+4 切简繁。
+    #   出厂的 numbered_mode_switch 用的是 simplification / extended_charset 这些出厂
+    #   开关名，和本方案的 traditionalization 对不上，所以不引那一组，自己写这两条。
+    #   鼠须管认 Control+Shift+3，小狼毫认 Control+Shift+numbersign，两种都写上。
+    - { when: always, toggle: ascii_punct, accept: Control+Shift+3 }
+    - { when: always, toggle: ascii_punct, accept: Control+Shift+numbersign }
+    - { when: always, toggle: traditionalization, accept: Control+Shift+4 }
+    - { when: always, toggle: traditionalization, accept: Control+Shift+dollar }
+    # 小键盘 0~9 和小数点映射到主键盘，这样 R 数字金额大写（如 R1234.56）能用小键盘打。
+    #   出厂没有这组，雾凇 default.yaml 里有。不加会怎样：小键盘打的数字不进输入串。
+    - { accept: KP_0, send: 0, when: composing }
+    - { accept: KP_1, send: 1, when: composing }
+    - { accept: KP_2, send: 2, when: composing }
+    - { accept: KP_3, send: 3, when: composing }
+    - { accept: KP_4, send: 4, when: composing }
+    - { accept: KP_5, send: 5, when: composing }
+    - { accept: KP_6, send: 6, when: composing }
+    - { accept: KP_7, send: 7, when: composing }
+    - { accept: KP_8, send: 8, when: composing }
+    - { accept: KP_9, send: 9, when: composing }
+    - { accept: KP_Decimal, send: period, when: composing }

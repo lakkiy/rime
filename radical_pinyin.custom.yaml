@@ -1,0 +1,16 @@
+# ==============================================================================
+# 部件拆字方案（radical_pinyin）补丁 —— 把拼写派生规则改成小鹤双拼
+# ==============================================================================
+# radical_pinyin.schema.yaml 第 38 行的默认值是 __include: algebra_rime_ice（全拼）。
+# 这个方案负责两件事：
+#   1. uU 引导的部件拆字反查（打 uUmu 查「木」）
+#   2. 打字中按 ` 引导的辅码筛选（search.lua）
+# 两者都要按双拼的拼写规则来，不打这个补丁就得按全拼输入部件码。
+#
+# 内容抄自 rime-ice/others/patch_examples/radical_pinyin.custom.yaml。
+# 换双拼方案时改这一行即可，可选值见 radical_pinyin.schema.yaml 里的 algebra_* 节点。
+# ==============================================================================
+
+patch:
+  speller/algebra:
+    __include: radical_pinyin.schema.yaml:/algebra_double_pinyin_flypy  # 小鹤双拼

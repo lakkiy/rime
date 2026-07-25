@@ -1,0 +1,83 @@
+# ==============================================================================
+# 鼠须管（Squirrel）外观与前端行为补丁
+# ==============================================================================
+# ★ 用 style/xxx 逐项打补丁，不要整块写 style: 再嵌套 —— 整块写会把出厂
+#   squirrel.yaml 里 style 下的其余项全部丢掉（font_face: 'Avenir'、font_point: 16、
+#   candidate_format、memorize_size、show_paging、text_orientation…），
+#   退回 Squirrel 内建的硬编码默认值。这条坑已经踩过一次。
+#   同理见 CLAUDE.md 硬规则 4。
+#
+# 同理 preset_color_schemes 也必须逐套写成 preset_color_schemes/<名字>: —— 整块写会把
+#   出厂内置的 19 套配色（native / aqua / azure / luna / solarized_* …）全部抹掉，
+#   方案选单里就只剩自己这两套了。
+#
+# 注意：下面 preset_color_schemes 里自定义的两套配色本身也带 candidate_list_layout /
+#       inline_preedit / translucency / corner_radius 等键，配色被选中时这些会覆盖
+#       style 的同名项 —— 所以真正会丢的是配色方案里【没写】的那几个（字体、
+#       candidate_format 等）。
+# ==============================================================================
+
+patch:
+  keyboard_layout: Dvorak
+
+  style/color_scheme: flat_light
+  style/color_scheme_dark: flat_dark
+
+  # 只追加/修改某个 app 的设置，不覆盖系统默认 app_options：
+  "app_options/com.raycast.macos":
+    ascii_mode: true
+  "app_options/com.mitchellh.ghostty":  # Ghostty 终端默认英文
+    ascii_mode: true
+
+  preset_color_schemes/flat_light:
+    name: "扁平明／Flat Light"
+    candidate_list_layout: linear
+    inline_preedit: true
+    translucency: true
+    mutual_exclusive: true
+    corner_radius: 12.0
+    hilited_corner_radius: 12.0
+    border_height: -1.0
+    border_width: -1.0
+    line_spacing: 4.0
+    spacing: 10.0
+    alpha: 80
+    shadow_size: 1.0
+    color_space: display_p3
+    back_color: 0x1AFFFFFF
+    candidate_text_color: 0xB3000000
+    comment_text_color: 0x80333333
+    label_color: 0xBB333333
+    hilited_candidate_back_color: 0x4DFFFFFF
+    hilited_candidate_text_color: 0x000000
+    hilited_comment_text_color: 0xBF333333
+    hilited_candidate_label_color: 0x000000
+    preedit_back_color: 0x1A000000
+    text_color: 0xBF323232
+    hilited_text_color: 0xBF1A1A1A
+  preset_color_schemes/flat_dark:
+    name: "扁平暗／Flat Dark"
+    candidate_list_layout: linear
+    inline_preedit: true #单行显示
+    translucency: true
+    mutual_exclusive: true
+    corner_radius: 12.0
+    hilited_corner_radius: 12.0
+    border_height: -1.0
+    border_width: -1.0
+    line_spacing: 4.0
+    spacing: 10.0
+    alpha: 80
+    shadow_size: 1.0
+    color_space: display_p3
+    back_color: 0x1A000000           # 半透明黑色背景
+    candidate_text_color: 0xB3FFFFFF  # 候选词文字：白色
+    comment_text_color: 0x80CCCCCC    # 注释文字：浅灰色
+    label_color: 0xBBCCCCCC           # 序号标签：浅灰色
+    hilited_candidate_back_color: 0x4D000000  # 高亮候选词背景：深黑色
+    hilited_candidate_text_color: 0xFFFFFF    # 高亮候选词文字：纯白
+    hilited_comment_text_color: 0xBFCCCCCC    # 高亮注释：浅灰色
+    hilited_candidate_label_color: 0xFFFFFF   # 高亮序号：纯白
+    preedit_back_color: 0x1AFFFFFF   # 编码区背景：半透明白色
+    text_color: 0xBFCDCDCD           # 编码区文字：浅灰色
+    hilited_text_color: 0xBFE5E5E5   # 编码区高亮文字：更亮的灰色
